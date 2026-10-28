@@ -1,0 +1,118 @@
+$readme = @'
+# TeacherRating DApp
+
+Application décentralisée (DApp) de **notation des enseignants sur la blockchain Ethereum**. Un smart contract Solidity garantit que chaque étudiant (adresse) ne peut noter un enseignant qu'une seule fois, et que les statistiques sont publiques et infalsifiables.
+
+## Objectif
+
+Proposer un système d'évaluation transparent :
+
+- les notes sont stockées on-chain et ne peuvent pas être modifiées ou supprimées ;
+- le double vote est bloqué par le contrat lui-même ;
+- la moyenne de chaque enseignant est calculable par n'importe qui.
+
+## Fonctionnalités
+
+| Rôle | Action | Fonction |
+|------|--------|----------|
+| Admin (owner) | Ajouter un enseignant | `addTeacher(string _name)` |
+| Étudiant | Noter un enseignant (1 à 5) | `rateTeacher(uint256 _teacherId, uint8 _rating)` |
+| Tout le monde | Obtenir la moyenne × 100 | `getAverage(uint256 _teacherId)` |
+
+Exemple : `getAverage` retourne `450` pour une moyenne de 4,50.
+
+### Variables publiques
+
+- `owner` : adresse de l'administrateur (celle qui a déployé le contrat)
+- `teacherCount` : nombre d'enseignants enregistrés
+- `teachers(id)` : nom, score total et nombre de notes d'un enseignant
+- `hasRated(id, adresse)` : indique si une adresse a déjà noté cet enseignant
+
+### Événements
+
+- `TeacherAdded(teacherId, name)`
+- `RatingSubmitted(teacherId, student, rating)`
+
+### Règles de sécurité du contrat
+
+- seul l'owner peut ajouter un enseignant (`onlyOwner`) ;
+- la note doit être comprise entre 1 et 5 (`Note invalide`) ;
+- l'enseignant doit exister (`Professeur inexistant`) ;
+- une adresse ne peut pas noter deux fois le même enseignant (`Deja note`).
+
+## Structure du projet
+
+```
+.
+├── contracts/
+│   ├── Migrations.sol        # contrat de migration Truffle
+│   └── TeacherRating.sol     # contrat principal
+├── migrations/
+│   ├── 1_initial_migration.js
+│   └── 2_deploy_contracts.js # déploiement de TeacherRating
+├── test/                     # tests (à compléter)
+└── truffle-config.js         # réseau development : 127.0.0.1:7545
+```
+
+## Technologies
+
+- Solidity `^0.4.24` (compilé avec solc 0.4.25)
+- Truffle
+- Ganache (blockchain locale de test)
+
+## Prérequis
+
+- [Node.js](https://nodejs.org)
+- Truffle : `npm install -g truffle`
+- [Ganache](https://trufflesuite.com/ganache/) lancé sur `127.0.0.1:7545`
+
+> Le contrat est écrit en Solidity 0.4.x. Avec Truffle 5, ajoute dans `truffle-config.js` :
+> `compilers: { solc: { version: "0.4.25" } }`
+
+## Installation et utilisation
+
+```bash
+git clone https://github.com/Hiba-MHADA/teacher-rating-dapp.git
+cd teacher-rating-dapp
+
+truffle compile
+truffle migrate --reset
+truffle console
+```
+
+Exemple dans la console Truffle :
+
+```js
+let c = await TeacherRating.deployed()
+
+// Admin : ajouter un enseignant
+await c.addTeacher("Pr. Exemple")
+
+// Étudiant : noter l'enseignant n°0 avec 5/5
+await c.rateTeacher(0, 5)
+
+// Moyenne × 100
+(await c.getAverage(0)).toString()   // "500"
+
+// Un second vote avec la même adresse est refusé
+await c.rateTeacher(0, 4)            // erreur : Deja note
+```
+
+## Limites connues
+
+- Une même personne peut voter avec plusieurs adresses : le contrat limite un vote par adresse, pas par étudiant.
+- Il n'y a pas de vérification d'identité des étudiants.
+- Les notes sont publiques : chaque vote est associé à l'adresse de l'étudiant.
+
+## Améliorations possibles
+
+- Liste blanche d'adresses d'étudiants autorisés, gérée par l'admin
+- Tests automatisés (Truffle / Mocha)
+- Interface web (React + Web3.js) connectée à MetaMask
+- Déploiement sur un réseau de test (Sepolia)
+
+## Auteure
+
+Hiba — [Hiba-MHADA](https://github.com/Hiba-MHADA)
+'@
+[System.IO.File]::WriteAllText("$PWD\README.md", $readme, (New-Object System.Text.UTF8Encoding($false)))
